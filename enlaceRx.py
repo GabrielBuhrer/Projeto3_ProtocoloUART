@@ -72,7 +72,8 @@ class RX(object):
         while(self.getBufferLen() < size):
             time.sleep(0.05)
             if time.time() >= targetTime:
-                return 0, 0                
+                self.clearBuffer()
+                return 0           
         return(self.getBuffer(size))
 
 
