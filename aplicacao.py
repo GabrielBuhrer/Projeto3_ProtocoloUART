@@ -4,7 +4,7 @@ import time
 import numpy as np
 from enlaceRx import *
 
-serialName = "COM7"         
+serialName = "COM3"         
 
 
 def main():
@@ -68,13 +68,7 @@ def main():
             rxBuffer, _ = com1.getData(4)
 
             while True:
-                if i == 0:
-                    target_time = time.time() + 10
-                    i = 1
-
                 rxBuffer, nRx = com1.getData(10)
-
-            
 
                 if nRx > 0:
 
@@ -87,42 +81,46 @@ def main():
                             while com1.tx.threadMutex == True:
                                 continue
                             nideal = nideal - 1
-                            i = 0
+                            target_time = time.time() + 10
+                            com1.rx.clearBuffer()
                             print('Erro de pacote fora de ordem')
                         else:
                             tpacotes = rxBuffer[2]
                             tamdados = rxBuffer[3]
                         
-                        rxBuffer, nRx = com1.getData(tamdados)
-                        print(rxBuffer)
-                        final, nRx = com1.getData(4)
+                            rxBuffer, nRx = com1.getData(tamdados)
+                            print(rxBuffer)
+                            final, nRx = com1.getData(4)
                         
-                        if rxBuffer == 0:
-                            msg = b'\06\00\00\00\00\00\00\00\00\00\xAA\xBB\xAA\xBB'
-                            com1.sendData(np.asarray(msg))
-                            while com1.tx.threadMutex == True:
-                                continue
-                            nideal = nideal - 1
-                            i = 0
-                            
-                            print('Erro de tamanho de payload errado')
-                        elif final != b'\xAA\xBB\xAA\xBB':
-                            msg = b'\06\00\00\00\00\00\00\00\00\00\xAA\xBB\xAA\xBB'
-                            com1.sendData(np.asarray(msg))
-                            while com1.tx.threadMutex == True:
-                                continue
-                            nideal = nideal - 1
-                            i = 0
-                            print('Erro de EOP com problema')
-                        else:
-                            if nRx > 0:
-                                imagem += rxBuffer
-                                msg = b'\04\00\00\00\00\00\00\00\00\00\xAA\xBB\xAA\xBB'
-                                msg = msg[:1] + (npacote).to_bytes(1, byteorder="big")[-1:] + msg[2:]
+                            if rxBuffer == 0:
+                                msg = b'\06\00\00\00\00\00\00\00\00\00\xAA\xBB\xAA\xBB'
                                 com1.sendData(np.asarray(msg))
-                                i = 0
                                 while com1.tx.threadMutex == True:
                                     continue
+                                nideal = nideal - 1
+                                target_time = time.time() + 10
+                                
+                                print('Erro de tamanho de payload errado')
+                            elif rxBuffer==9999:
+                                nideal = nideal - 1
+                                
+                            elif final != b'\xAA\xBB\xAA\xBB':
+                                msg = b'\06\00\00\00\00\00\00\00\00\00\xAA\xBB\xAA\xBB'
+                                com1.sendData(np.asarray(msg))
+                                while com1.tx.threadMutex == True:
+                                    continue
+                                nideal = nideal - 1
+                                target_time = time.time() + 10
+                                print('Erro de EOP com problema')
+                            else:
+                                if nRx > 0:
+                                    imagem += rxBuffer
+                                    msg = b'\04\00\00\00\00\00\00\00\00\00\xAA\xBB\xAA\xBB'
+                                    msg = msg[:1] + (npacote).to_bytes(1, byteorder="big")[-1:] + msg[2:]
+                                    com1.sendData(np.asarray(msg))
+                                    target_time = time.time() + 10
+                                    while com1.tx.threadMutex == True:
+                                        continue
                 else:
                     if  time.time() >= target_time:
                         msg = b'\05\00\00\00\00\00\00\00\00\00\xAA\xBB\xAA\xBB'
@@ -140,6 +138,7 @@ def main():
                 imageW = './Recebidos/download.jpg'
                 nimg +=1
             else:
+                nimg+=1
                 imageW = './Recebidos/download2.jpg'
             f = open(imageW, 'wb')
             f.write(imagem)

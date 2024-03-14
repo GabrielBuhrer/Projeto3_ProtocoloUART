@@ -43,5 +43,9 @@ class enlace(object):
         data = self.rx.getNData(size)
         if data == 0:
             return 0,0
+        elif data == 9999:
+            return 9999,0
         else:
+            
             return(data, len(data))
+
